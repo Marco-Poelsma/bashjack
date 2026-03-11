@@ -131,7 +131,7 @@ elif [ "$1" = "blackjack" ]; then
 		# - either player busts,
 		# - or if there's blackjack
 		# TODO: Add match end checks
-		if [ match_ended ]; then; 
+		if [ "$match_ended" = true ]; then 
 			break
 		fi
 
