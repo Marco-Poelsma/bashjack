@@ -92,7 +92,10 @@ elif [ "$1" = "blackjack" ]; then
 	while true; do
 		
 		while true; do # Error checking loop for player
-			read -p "Hit or stand?\nHit - h\nStand - s\n" choice
+			# read -p does not support escape characters, so I'm just going to
+			# handle those by adding a menu with echo
+			echo -e "Hit or stand?\nHit - h\nStand - s"
+			read -p "Your choice: " choice # Also adding a prompt just in case
 			case "$choice" in
 				h|H)
 					drawn_cards+=("$(draw)")

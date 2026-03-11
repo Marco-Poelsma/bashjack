@@ -10,10 +10,10 @@ Ace of Spades
 10 of Spades
 Jack of Spades
 Queen of Spades
-King of Spades
 Ace of Hearts
 2 of Hearts
 3 of Hearts
+4 of Hearts
 5 of Hearts
 6 of Hearts
 7 of Hearts
@@ -31,12 +31,13 @@ Ace of Clubs
 7 of Clubs
 8 of Clubs
 9 of Clubs
+10 of Clubs
 Jack of Clubs
 Queen of Clubs
+King of Clubs
 Ace of Diamonds
+2 of Diamonds
 3 of Diamonds
-4 of Diamonds
-5 of Diamonds
 6 of Diamonds
 7 of Diamonds
 8 of Diamonds
