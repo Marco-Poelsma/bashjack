@@ -58,7 +58,7 @@ get_hand_value() {
 			Ace)
 				aces=$(( aces + 1 )) # Aces can be 1 or 11. We'll keep track of them
 						     # To avoid bust when we can count them as 1.
-				total=$(( total + 10 ))
+				total=$(( total + 11 ))
 				;;
 			Jack|Queen|King) # These are all worth 10
 				total=$(( total + 10 ))
@@ -98,32 +98,52 @@ elif [ "$1" = "blackjack" ]; then # LET'S GO GAMBLING! LET'S GO GAMBLING! LET'S 
 	echo "Hand value: $(get_hand_value "${dealer_cards[@]}")" # And print the card value
 	match_ended=false # I might delete this later... for now it's here.
 	while true; do
+
+		# Since we draw two cards at the beginning, we should check if we get blackjack right away.
+		# I'm going to be nice and hand out a win for the player even if the dealer also has blackjack
+		if [ $(get_hand_value "${drawn_cards[@]}") -eq 21 ]; then
+			echo "Blackjack! You win!"
+			break
+		fi
+
+		if [ $(get_hand_value "${dealer_cards[@]}") -eq 21 ]; then
+			echo "The dealer has blackjack. You lost."
+			break
+		fi
 		
-		while true; do # Error checking loop for player
-			# read -p does not support escape characters, so I'm just going to
-			# handle those by adding a menu with echo
-			echo -e "Hit or stand?\nHit - h\nStand - s"
-			read -p "Your choice: " choice # Also adding a prompt for clarity
-			case "$choice" in
-				h|H) # HIT
-					drawn_cards+=("$(draw)") # Draw a card
-					echo "Your cards:"
-					print_drawn_cards "${drawn_cards[@]}" # Show cards and total value beneath
-					echo "Your hand value is $(get_hand_value "${drawn_cards[@]}")"
-					break # We can stop error checking
-					;;
-				s|S) # STAND
-					echo "You stand. Final hand:"
-					print_drawn_cards "${drawn_cards[@]}" # Final hand cards
-					echo "With value: $(get_hand_value "${drawn_cards[@]}")" # And their value
-					match_ended=true # TEMP: Set match end boolean to true
-					break # We can stop error checking
-					;;
-				*) # INVALID INPUT
-					echo "Please introduce a valid choice."
-					;;
-			esac
-		done
+		# Error checking loop for player
+		# read -p does not support escape characters, so I'm just going to
+		# handle those by adding a menu with echo
+		echo -e "Hit or stand?\nHit - h\nStand - s"
+		read -p "Your choice: " choice # Also adding a prompt for clarity
+		case "$choice" in
+			h|H) # HIT
+				drawn_cards+=("$(draw)") # Draw a card
+				echo "Your cards:"
+				print_drawn_cards "${drawn_cards[@]}" # Show cards and total value beneath
+				echo "Your hand value is $(get_hand_value "${drawn_cards[@]}")"
+				break # We can stop error checking
+				;;
+			s|S) # STAND
+				echo "You stand. Final hand:"
+				print_drawn_cards "${drawn_cards[@]}" # Final hand cards
+				echo "With value: $(get_hand_value "${drawn_cards[@]}")" # And their value
+				match_ended=true # TEMP: Set match end boolean to true
+				break # We can stop error checking
+				;;
+			*) # INVALID INPUT
+				echo "Please introduce a valid choice."
+				continue # Keep checking...
+				;;
+		esac
+		
+		if [ $(get_hand_value "${drawn_cards[@]}") -gt 21 ]; then # If you go bust, you lose immediately.
+			echo "Bust. You lose."
+			break
+		elif [ $(get_hand_value "${drawn_cards[@]}") -eq 21 ]; then # We can end the game here if you have blackjack
+			echo "Blackjack! You win!"
+			break
+		fi
 
 		# I'm going to add some very simple logic for the dealer here. If the value of their hand
 		# is less than 17, the dealer will hit. Otherwise, they will stand. It's not the best,
@@ -135,6 +155,16 @@ elif [ "$1" = "blackjack" ]; then # LET'S GO GAMBLING! LET'S GO GAMBLING! LET'S 
 			echo "Dealer's hand:"
 			print_drawn_cards "${dealer_cards[@]}" # We show their hand
 			echo "The dealer's hand value is $(get_hand_value "${dealer_cards[@]}")" # And the value
+
+			# And we also check if the dealer has gone bust
+			if [ $(get_hand_value "${dealer_cards[@]}") -gt 21 ]; then
+				echo "The dealer has gone bust. You win!"
+				break
+			elif [ $(get_hand_value "${dealer_cards[@]}") -eq 21 ]; then # Check if the dealer has blackjack
+				echo "The dealer has blackjack. You lost."
+				break
+			fi
+
 		else
 			echo "The dealer stands."
 			echo "Dealer's hand:"
@@ -147,11 +177,13 @@ elif [ "$1" = "blackjack" ]; then # LET'S GO GAMBLING! LET'S GO GAMBLING! LET'S 
 		# - either player busts,
 		# - or if there's blackjack
 		# TODO: Add match end checks
-		if [ "$match_ended" = true ]; then 
+		
+		# Check if both players stand
+		if [ $(get_hand_value "${dealer_cards[@]}") -ge 17 ] && [ "$choice" = "s" ] || [ "$choice" = "S" ];then 
 			break
 		fi
-
 	done
+
 else # Default to deck reinitialisation if anything other than "draw" or "blackjack" is passed
      # As an input parametre
 	echo "No parametres detected. Defaulting to deck reinitalisation"
