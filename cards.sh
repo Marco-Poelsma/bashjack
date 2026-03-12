@@ -11,7 +11,7 @@ print_drawn_cards() {
 init() {
 	touch cards.txt # Create our cards file if it doesn't exist
 	echo -n "" > cards.txt # Delete its content if it exists
-	for suit in "Spades" "Hearts" "Clubs" "Diamonds" ; do # We iterate over suit
+	for suit in "Spades" "Hearts" "Clubs" "Diamonds" ; do # We iterate over all 4 suits
 		for j in {1..13}; do # We iterate over the ranks
 			case $j in # Let's rename some suits for better legibility
 				1) # So rank 1 will be an Ace
@@ -73,7 +73,7 @@ get_hand_value() {
 		aces=$(( aces - 1 ))
 	done
 
-	echo $total # Return the total worth of the player's hand
+	echo $total # Return the total value of the player's hand
 }
 
 
@@ -96,7 +96,7 @@ elif [ "$1" = "blackjack" ]; then # LET'S GO GAMBLING! LET'S GO GAMBLING! LET'S 
 	echo "Dealer's cards:"
 	print_drawn_cards "${dealer_cards[@]}" # Show cards
 	echo "Hand value: $(get_hand_value "${dealer_cards[@]}")" # And print the card value
-	match_ended=false # I might delete this later... for now it's here.
+	choice="" # Initialise empty choice variable. In case it isn't detected properly later on
 	while true; do
 
 		# Since we draw two cards at the beginning, we should check if we get blackjack right away.
@@ -114,29 +114,32 @@ elif [ "$1" = "blackjack" ]; then # LET'S GO GAMBLING! LET'S GO GAMBLING! LET'S 
 		# Error checking loop for player
 		# read -p does not support escape characters, so I'm just going to
 		# handle those by adding a menu with echo
-		echo -e "Hit or stand?\nHit - h\nStand - s"
-		read -p "Your choice: " choice # Also adding a prompt for clarity
-		case "$choice" in
-			h|H) # HIT
-				drawn_cards+=("$(draw)") # Draw a card
-				echo "Your cards:"
-				print_drawn_cards "${drawn_cards[@]}" # Show cards and total value beneath
-				echo "Your hand value is $(get_hand_value "${drawn_cards[@]}")"
-				break # We can stop error checking
-				;;
-			s|S) # STAND
-				echo "You stand. Final hand:"
-				print_drawn_cards "${drawn_cards[@]}" # Final hand cards
-				echo "With value: $(get_hand_value "${drawn_cards[@]}")" # And their value
-				match_ended=true # TEMP: Set match end boolean to true
-				break # We can stop error checking
-				;;
-			*) # INVALID INPUT
-				echo "Please introduce a valid choice."
-				continue # Keep checking...
-				;;
-		esac
-		
+		# And before we keep going let's also surround this with an if statement
+		# so that we only ask for a choice if the player hasn't stood yet.
+		if [ "$choice" != "s" ] && [ "$choice" != "S" ]; then
+			echo -e "Hit or stand?\nHit - h\nStand - s"
+			read -p "Your choice: " choice # Also adding a prompt for clarity
+			case "$choice" in
+				h|H) # HIT
+					drawn_cards+=("$(draw)") # Draw a card
+					echo "Your cards:"
+					print_drawn_cards "${drawn_cards[@]}" # Show cards and total value beneath
+					echo "Your hand value is $(get_hand_value "${drawn_cards[@]}")"
+					break # We can stop error checking
+					;;
+				s|S) # STAND
+					echo "You stand. Final hand:"
+					print_drawn_cards "${drawn_cards[@]}" # Final hand cards
+					echo "With value: $(get_hand_value "${drawn_cards[@]}")" # And their value
+					break # We can stop error checking
+					;;
+				*) # INVALID INPUT
+					echo "Please introduce a valid choice."
+					continue # Keep checking...
+					;;
+			esac
+		fi
+
 		if [ $(get_hand_value "${drawn_cards[@]}") -gt 21 ]; then # If you go bust, you lose immediately.
 			echo "Bust. You lose."
 			break
@@ -179,7 +182,7 @@ elif [ "$1" = "blackjack" ]; then # LET'S GO GAMBLING! LET'S GO GAMBLING! LET'S 
 		# TODO: Add match end checks
 		
 		# Check if both players stand
-		if [ $(get_hand_value "${dealer_cards[@]}") -ge 17 ] && [ "$choice" = "s" ] || [ "$choice" = "S" ];then 
+		if [ $(get_hand_value "${dealer_cards[@]}") -ge 17 ] && [ "$choice" = "s" ] || [ "$choice" = "S" ];then # I ended up removing the boolean. I can just check if the player decided to stand.
 			break
 		fi
 	done
