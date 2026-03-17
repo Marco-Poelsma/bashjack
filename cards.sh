@@ -11,11 +11,11 @@ print_drawn_cards() {
 init() {
 	touch cards.txt # Create our cards file if it doesn't exist
 	echo -n "" > cards.txt # Delete its content if it exists
-	for suit in "Spades" "Hearts" "Clubs" "Diamonds" ; do # We iterate over all 4 suits
+	for suit in "Spades" "Hearts" "Clubs" "Diamonds"; do # We iterate over all 4 suits
 		for j in {1..13}; do # We iterate over the ranks
 			case $j in # Let's rename some suits for better legibility
 				1) # So rank 1 will be an Ace
-					value="Ace" 
+					value="Ace"
 					;;
 				11) # Rank 11 is a Jack
 					value="Jack"
@@ -26,7 +26,7 @@ init() {
 				13) # Rank 13 is a King
 					value="King"
 					;;
-				*) # Every other rank can be kept the same (mainly because I don't want to 
+				*) # Every other rank can be kept the same (mainly because I don't want to
 				   # literally transcribe all of the values for all of the cards).
 					value=$j
 					;;
@@ -42,7 +42,7 @@ draw() {
 	local linia=$(( (RANDOM % n_linies) + 1)) # Then select a random line
 	local drawn_card=$(sed -n "${linia}p" cards.txt) # And view its data
 	sed -i "${linia}d" cards.txt # Finally we will delete this card from the deck
-	                             # (afeter all, it's no longer there)
+	                             # (after all, it's no longer there)
 	echo $drawn_card # A bit janky, but apparently this is how we can return values from functions...
 }
 
@@ -53,7 +53,7 @@ get_hand_value() {
 
 	for card in "${@}"; do
 		local rank="${card%% *}" # We don't care about the suit. We just need to know
-					 # the value of everything before the first space
+				 # the value of everything before the first space
 		case "$rank" in
 			Ace)
 				aces=$(( aces + 1 )) # Aces can be 1 or 11. We'll keep track of them
@@ -68,7 +68,7 @@ get_hand_value() {
 				;;
 		esac
 	done
-	while [ $aces -gt 0 ] && [ $total -gt 21 ]; do #And here we downgrade aces as needed.
+	while [ $aces -gt 0 ] && [ $total -gt 21 ]; do # And here we downgrade aces as needed.
 		total=$(( total - 10 ))
 		aces=$(( aces - 1 ))
 	done
@@ -80,7 +80,7 @@ get_hand_value() {
 if [ "$1" = "draw" ]; then # sudo bash cards.sh draw -- Returns a card (any card) and removes it from the deck
 	draw
 elif [ "$1" = "blackjack" ]; then # LET'S GO GAMBLING! LET'S GO GAMBLING! LET'S GO GAMBLING!!!!!!!!
-	echo "You're playing black jack. Good luck!"
+	echo "You're playing blackjack. Good luck!"
 	init
 
 	drawn_cards=() # Initialise card array for player
@@ -96,95 +96,109 @@ elif [ "$1" = "blackjack" ]; then # LET'S GO GAMBLING! LET'S GO GAMBLING! LET'S 
 	echo "Dealer's cards:"
 	print_drawn_cards "${dealer_cards[@]}" # Show cards
 	echo "Hand value: $(get_hand_value "${dealer_cards[@]}")" # And print the card value
+
 	choice="" # Initialise empty choice variable. In case it isn't detected properly later on
-	while true; do
+	game_over=false
 
-		# Since we draw two cards at the beginning, we should check if we get blackjack right away.
-		# I'm going to be nice and hand out a win for the player even if the dealer also has blackjack
-		if [ $(get_hand_value "${drawn_cards[@]}") -eq 21 ]; then
-			echo "Blackjack! You win!"
-			break
-		fi
+	# Since we draw two cards at the beginning, we should check if we get blackjack right away.
+	# I'm going to be nice and hand out a win for the player even if the dealer also has blackjack
+	if [ $(get_hand_value "${drawn_cards[@]}") -eq 21 ]; then
+		echo "Blackjack! You win!"
+		game_over=true
+	elif [ $(get_hand_value "${dealer_cards[@]}") -eq 21 ]; then
+		echo "The dealer has blackjack. You lost."
+		game_over=true
+	fi
 
-		if [ $(get_hand_value "${dealer_cards[@]}") -eq 21 ]; then
-			echo "The dealer has blackjack. You lost."
-			break
-		fi
-		
-		# Error checking loop for player
-		# read -p does not support escape characters, so I'm just going to
-		# handle those by adding a menu with echo
-		# And before we keep going let's also surround this with an if statement
-		# so that we only ask for a choice if the player hasn't stood yet.
+	while [ "$game_over" = false ]; do
+
+		# --- Player's turn ---
 		if [ "$choice" != "s" ] && [ "$choice" != "S" ]; then
-			echo -e "Hit or stand?\nHit - h\nStand - s"
-			read -p "Your choice: " choice # Also adding a prompt for clarity
+			# read -p does not support escape characters, so I'm just going to
+			# handle those by adding a menu with echo
+			# Input validation loop
+			while true; do
+				echo -e "Hit or stand?\nHit - h\nStand - s"
+				read -p "Your choice: " choice # Also adding a prompt for clarity
+				case "$choice" in
+					h|H|s|S)
+						break # Valid input, we can stop error checking
+						;;
+					*) # INVALID INPUT
+						echo "Please introduce a valid choice."
+						;; # Keep checking...
+				esac
+			done
+
 			case "$choice" in
 				h|H) # HIT
 					drawn_cards+=("$(draw)") # Draw a card
 					echo "Your cards:"
 					print_drawn_cards "${drawn_cards[@]}" # Show cards and total value beneath
 					echo "Your hand value is $(get_hand_value "${drawn_cards[@]}")"
-					break # We can stop error checking
+
+					if [ $(get_hand_value "${drawn_cards[@]}") -gt 21 ]; then # If you go bust, you lose immediately.
+						echo "Bust. You lose."
+						game_over=true
+						continue
+					elif [ $(get_hand_value "${drawn_cards[@]}") -eq 21 ]; then # We can end the game here if you have blackjack
+						echo "Blackjack! You win!"
+						game_over=true
+						continue
+					fi
 					;;
 				s|S) # STAND
 					echo "You stand. Final hand:"
 					print_drawn_cards "${drawn_cards[@]}" # Final hand cards
 					echo "With value: $(get_hand_value "${drawn_cards[@]}")" # And their value
-					break # We can stop error checking
-					;;
-				*) # INVALID INPUT
-					echo "Please introduce a valid choice."
-					continue # Keep checking...
 					;;
 			esac
-		fi
-
-		if [ $(get_hand_value "${drawn_cards[@]}") -gt 21 ]; then # If you go bust, you lose immediately.
-			echo "Bust. You lose."
-			break
-		elif [ $(get_hand_value "${drawn_cards[@]}") -eq 21 ]; then # We can end the game here if you have blackjack
-			echo "Blackjack! You win!"
-			break
 		fi
 
 		# I'm going to add some very simple logic for the dealer here. If the value of their hand
 		# is less than 17, the dealer will hit. Otherwise, they will stand. It's not the best,
 		# but it's better than nothing.
-		# I want it to be based on turns, like the real game
-		if [ $(get_hand_value "${dealer_cards[@]}") -lt 17 ]; then
-			echo "The dealer hits."
-			dealer_cards+=("$(draw)") # The dealer draws
-			echo "Dealer's hand:"
-			print_drawn_cards "${dealer_cards[@]}" # We show their hand
-			echo "The dealer's hand value is $(get_hand_value "${dealer_cards[@]}")" # And the value
+		# I wanted it to be based on turns, but it's quite complicated... therefore:
+		# Only run dealer logic once the player has stood
+		if [ "$game_over" = false ] && { [ "$choice" = "s" ] || [ "$choice" = "S" ]; }; then
+			if [ $(get_hand_value "${dealer_cards[@]}") -lt 17 ]; then
+				echo "The dealer hits."
+				dealer_cards+=("$(draw)") # The dealer draws
+				echo "Dealer's hand:"
+				print_drawn_cards "${dealer_cards[@]}" # We show their hand
+				echo "The dealer's hand value is $(get_hand_value "${dealer_cards[@]}")" # And the value
 
-			# And we also check if the dealer has gone bust
-			if [ $(get_hand_value "${dealer_cards[@]}") -gt 21 ]; then
-				echo "The dealer has gone bust. You win!"
-				break
-			elif [ $(get_hand_value "${dealer_cards[@]}") -eq 21 ]; then # Check if the dealer has blackjack
-				echo "The dealer has blackjack. You lost."
-				break
+				# And we also check if the dealer has gone bust
+				if [ $(get_hand_value "${dealer_cards[@]}") -gt 21 ]; then
+					echo "The dealer has gone bust. You win!"
+					game_over=true
+					continue
+				elif [ $(get_hand_value "${dealer_cards[@]}") -eq 21 ]; then # Check if the dealer has blackjack
+					echo "The dealer has blackjack. You lost."
+					game_over=true
+					continue
+				fi
+
+			else
+				echo "The dealer stands."
+				echo "Dealer's hand:"
+				print_drawn_cards "${dealer_cards[@]}" # Show dealer's hand
+				echo "Dealer hand value: $(get_hand_value "${dealer_cards[@]}")" # And value
+
+				# Both players have stood — resolve the game
+				player_val=$(get_hand_value "${drawn_cards[@]}")
+				dealer_val=$(get_hand_value "${dealer_cards[@]}")
+				if [ $player_val -gt $dealer_val ]; then
+					echo "You win! ($player_val vs $dealer_val)"
+				elif [ $dealer_val -gt $player_val ]; then
+					echo "Dealer wins. ($dealer_val vs $player_val)"
+				else
+					echo "It's a tie! ($player_val)"
+				fi
+				game_over=true
 			fi
-
-		else
-			echo "The dealer stands."
-			echo "Dealer's hand:"
-			print_drawn_cards "${dealer_cards[@]}" # Show dealer's hand
-			echo "Dealer hand value: $(get_hand_value "${dealer_cards[@]}")" # And value
 		fi
 
-		# And obviously we can exit the game if:
-		# - both players stand,
-		# - either player busts,
-		# - or if there's blackjack
-		# TODO: Add match end checks
-		
-		# Check if both players stand
-		if [ $(get_hand_value "${dealer_cards[@]}") -ge 17 ] && [ "$choice" = "s" ] || [ "$choice" = "S" ];then # I ended up removing the boolean. I can just check if the player decided to stand.
-			break
-		fi
 	done
 
 else # Default to deck reinitialisation if anything other than "draw" or "blackjack" is passed
