@@ -1,5 +1,7 @@
 # BashJack: A shell terminal blackjack.
 
+![Bash Script](https://img.shields.io/badge/bash_script-%23121011.svg?style=for-the-badge&logo=gnu-bash&logoColor=white)
+
 Welcome to BashJack! This project is a class assignment where I had to make a shell script that lets the user play blackjack.
 
 ## Usage
