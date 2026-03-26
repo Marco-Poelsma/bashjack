@@ -29,3 +29,11 @@ The default mode for BashJack. If you use any input parametre other than `draw` 
 > [!TIP]
 > Blackjack mode reinitialises the deck before running, so you do not have to run this command before playing blackjack.
 
+## File Structure
+
+```
+bashjack/
+    ├── README.md
+    ├── cards.sh
+    └── cards.txt
+```
